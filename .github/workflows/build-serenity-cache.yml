@@ -1,0 +1,47 @@
+name: Build Serenity Cache + SSH
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android || true
+          sudo docker image prune --all --force || true
+          df -h
+
+      - name: Cache ROM + ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/rom/.repo
+            ~/rom/device/xiaomi/serenity
+            ~/rom/vendor/xiaomi/serenity
+            ~/.ccache
+          key: serenity-lineage22-v1
+          restore-keys: serenity-lineage22-
+
+      - name: Install deps + repo
+        run: |
+          sudo apt update
+          sudo apt install -y git-core flex bison build-essential zip curl zlib1g-dev libncurses6 python3 || true
+          if ! command -v repo &> /dev/null; then curl https://storage.googleapis.com/git-repo-downloads/repo > /tmp/repo && chmod a+x /tmp/repo && sudo mv /tmp/repo /usr/local/bin/repo; fi
+
+      - name: Sync device + vendor (cached)
+        run: |
+          mkdir -p ~/rom && cd ~/rom
+          [ -d .repo ] || repo init -u https://github.com/LineageOS/android.git -b lineage-22.2 --depth=1 --git-lfs || repo init -u https://github.com/LineageOS/android.git -b lineage-22.0 --depth=1 --git-lfs
+          [ -d device/xiaomi/serenity ] || git clone https://github.com/farrizdesignpro1339/android_device_xiaomi_serenity.git -b lineage-22.0 device/xiaomi/serenity --depth=1
+          [ -d vendor/xiaomi/serenity ] || git clone https://github.com/farrizdesignpro1339/android_vendor_xiaomi_serenity.git vendor/xiaomi/serenity --depth=1
+          df -h
+          echo "SYNC CACHED SUCCESS"
+
+      - name: SSH Debug if Failed
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
