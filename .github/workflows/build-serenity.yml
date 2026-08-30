@@ -1,0 +1,39 @@
+name: Build Serenity Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android || true
+          sudo docker image prune --all --force || true
+          df -h
+
+      - name: Install deps
+        run: |
+          sudo apt update
+          sudo apt install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev libc6-dev-i386 libncurses6 lib32ncurses6-dev x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python3 python3-pip repo || true
+          # install repo tool manual if not found
+          if ! command -v repo &> /dev/null; then curl https://storage.googleapis.com/git-repo-downloads/repo > /tmp/repo && chmod a+x /tmp/repo && sudo mv /tmp/repo /usr/local/bin/repo; fi
+          repo --version
+
+      - name: Repo init & sync test (shallow)
+        run: |
+          mkdir -p $HOME/rom && cd $HOME/rom
+          repo init -u https://github.com/LineageOS/android.git -b lineage-22.2 --depth=1 --git-lfs || repo init -u https://github.com/LineageOS/android.git -b lineage-22.0 --depth=1 --git-lfs
+          echo "=== sync device tree only test ==="
+          git clone https://github.com/farrizdesignpro1339/android_device_xiaomi_serenity.git -b lineage-22.0 device/xiaomi/serenity --depth=1
+          ls -lh device/xiaomi/serenity/
+          df -h
+          echo "TEST SYNC SUCCESS - DEVICE TREE KEDETECT"
+
+      - name: Cek Vendor
+        run: |
+          ls -lh $HOME/rom/device/xiaomi/serenity/prebuilts/ || echo "no prebuilts"
+          cat $HOME/rom/device/xiaomi/serenity/proprietary-files.txt | head -n 20
+          echo "Jika vendor missing, build butuh extract blop - test ini cuma cek spek sync"
