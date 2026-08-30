@@ -1,0 +1,34 @@
+name: Cek Spek Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  spek:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fastfetch Style Check
+        run: |
+          echo "===== CPU ====="
+          lscpu
+          echo ""
+          echo "===== RAM + SWAP ====="
+          free -h
+          echo ""
+          echo "===== DISK AWAL ====="
+          df -h
+          echo ""
+          echo "===== CLEANUP DOTNET/GHC/ANDROID ====="
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/lib/android || true
+          sudo docker image prune --all --force || true
+          echo ""
+          echo "===== DISK SETELAH CLEANUP (yang lu liat 146GB itu) ====="
+          df -h
+          echo ""
+          echo "===== OS & KERNEL ====="
+          cat /etc/os-release
+          uname -a
+          echo ""
+          echo "===== CORE & MEMINFO ====="
+          nproc
+          cat /proc/meminfo | head -n 20
