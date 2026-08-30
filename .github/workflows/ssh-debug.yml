@@ -1,0 +1,20 @@
+name: SSH Debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show Runner Info (fastfetch style)
+        run: |
+          echo "Runner siap untuk SSH"
+          lscpu | head -n 10
+          free -h
+          df -h
+
+      - name: Open SSH via tmate
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
